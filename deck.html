@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contact Data Quality with a Data 360 Code Extension</title>
+<style>
+  :root {
+    --bg: #0b1726;
+    --panel: #12233a;
+    --panel-2: #183050;
+    --ink: #eaf1f8;
+    --muted: #9fb3c8;
+    --accent: #3fa9f5;
+    --fire: #f2654b;
+    --hvac: #3fc1a5;
+    --sec: #b48cf2;
+    --valid: #3fc1a5;
+    --remed: #3fa9f5;
+    --invalid: #f2654b;
+    --missing: #6b7f95;
+    --warn: #f5b942;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  .deck { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+  .slide { position: absolute; inset: 0; padding: 5vh 6vw 9vh; display: none; flex-direction: column; overflow: auto; }
+  .slide.active { display: flex; animation: fade .25s ease; }
+  .slide > :first-child { margin-top: auto; }
+  .slide > :last-child { margin-bottom: auto; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .kicker { color: var(--accent); text-transform: uppercase; letter-spacing: .12em; font-size: .8rem; font-weight: 700; margin-bottom: .6rem; }
+  h1 { font-size: clamp(2rem, 4.4vw, 3.4rem); margin: 0 0 1rem; line-height: 1.1; }
+  h2 { font-size: clamp(1.5rem, 3vw, 2.3rem); margin: 0 0 1.2rem; line-height: 1.15; }
+  h3 { font-size: 1.1rem; margin: 0 0 .5rem; }
+  p, li { font-size: clamp(.95rem, 1.35vw, 1.15rem); line-height: 1.5; }
+  .lead { font-size: clamp(1.1rem, 1.8vw, 1.45rem); color: var(--muted); max-width: 60ch; }
+  .muted { color: var(--muted); }
+  .small { font-size: .85rem; }
+  code, .mono { font-family: var(--mono); font-size: .9em; background: rgba(255,255,255,.07); padding: .05em .35em; border-radius: 4px; }
+  pre { font-family: var(--mono); font-size: clamp(.75rem, 1.05vw, .95rem); background: #07111d; border: 1px solid #22395a;
+    border-radius: 10px; padding: 1rem 1.2rem; overflow: auto; line-height: 1.5; margin: 0; }
+  pre .c { color: #6b8aa8; } pre .k { color: #b48cf2; } pre .s { color: #3fc1a5; } pre .f { color: #3fa9f5; }
+  ul { margin: .2rem 0; padding-left: 1.2rem; } li { margin: .3rem 0; }
+  strong { color: #fff; }
+
+  .grid { display: grid; gap: 1.2rem; }
+  .g2 { grid-template-columns: 1fr 1fr; } .g3 { grid-template-columns: repeat(3, 1fr); } .g4 { grid-template-columns: repeat(4, 1fr); }
+  @media (max-width: 900px) { .g2, .g3, .g4 { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid #22395a; border-radius: 12px; padding: 1.1rem 1.2rem; }
+  .card.hl { border-color: var(--accent); }
+  .big { font-size: clamp(2rem, 4vw, 3.2rem); font-weight: 800; line-height: 1; }
+  .tag { display: inline-block; padding: .15rem .55rem; border-radius: 999px; font-size: .75rem; font-weight: 700; letter-spacing: .03em; }
+  .t-valid { background: rgba(63,193,165,.18); color: var(--valid); }
+  .t-remed { background: rgba(63,169,245,.18); color: var(--remed); }
+  .t-invalid { background: rgba(242,101,75,.18); color: var(--invalid); }
+  .t-missing { background: rgba(107,127,149,.25); color: #c2cfdc; }
+  .t-credit { background: rgba(245,185,66,.18); color: var(--warn); }
+  .t-free { background: rgba(63,193,165,.18); color: var(--valid); }
+
+  table { border-collapse: collapse; width: 100%; font-size: clamp(.82rem, 1.15vw, 1rem); }
+  th, td { text-align: left; padding: .55rem .7rem; border-bottom: 1px solid #22395a; vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; text-transform: uppercase; font-size: .75em; letter-spacing: .06em; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* flow diagram */
+  .flow { display: flex; align-items: stretch; gap: .6rem; flex-wrap: wrap; margin: 1rem 0 1.4rem; }
+  .node { flex: 1 1 0; min-width: 150px; background: var(--panel); border: 1px solid #22395a; border-radius: 12px; padding: .9rem 1rem; }
+  .node .zone { font-size: .7rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+  .node .name { font-weight: 700; margin: .25rem 0; }
+  .node.ce { border: 2px solid var(--accent); background: var(--panel-2); }
+  .arrow { align-self: center; color: var(--accent); font-size: 1.6rem; }
+
+  /* lifecycle */
+  .steps { display: flex; gap: .5rem; flex-wrap: wrap; counter-reset: s; }
+  .step { flex: 1 1 0; min-width: 120px; background: var(--panel); border-radius: 10px; padding: .8rem; border-top: 4px solid var(--accent); }
+  .step::before { counter-increment: s; content: counter(s); font-weight: 800; color: var(--accent); font-size: 1.3rem; display: block; }
+  .step .cmd { font-family: var(--mono); font-size: .8rem; color: var(--muted); display: block; margin: .3rem 0; word-break: break-word; }
+
+  /* stacked bars */
+  .bar-row { display: grid; grid-template-columns: 90px 1fr; gap: .8rem; align-items: center; margin: .9rem 0; }
+  .bar { display: flex; height: 38px; border-radius: 8px; overflow: hidden; }
+  .bar > div { display: flex; align-items: center; justify-content: center; font-size: .78rem; font-weight: 700; color: #07111d; white-space: nowrap; overflow: hidden; }
+  .b-valid { background: var(--valid); } .b-remed { background: var(--remed); } .b-invalid { background: var(--invalid); } .b-missing { background: var(--missing); color: #eaf1f8 !important; }
+  .legend { display: flex; gap: 1.2rem; flex-wrap: wrap; font-size: .9rem; color: var(--muted); }
+  .legend span::before { content: ""; display: inline-block; width: .8rem; height: .8rem; border-radius: 3px; margin-right: .4rem; vertical-align: -1px; background: var(--c); }
+
+  /* identity compare */
+  .vs { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+  @media (max-width: 900px) { .vs { grid-template-columns: 1fr; } }
+  .vs .card { text-align: center; padding: 1.6rem; }
+  .bad { border-color: var(--invalid); } .good { border-color: var(--valid); }
+
+  .rules { counter-reset: r; list-style: none; padding: 0; columns: 2; column-gap: 2rem; }
+  @media (max-width: 900px) { .rules { columns: 1; } }
+  .rules li { counter-increment: r; break-inside: avoid; padding-left: 2.2rem; position: relative; margin: 0 0 .7rem; font-size: clamp(.85rem, 1.15vw, 1rem); }
+  .rules li::before { content: counter(r); position: absolute; left: 0; top: 0; width: 1.6rem; height: 1.6rem; border-radius: 50%;
+    background: var(--panel-2); color: var(--accent); font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: .8rem; }
+
+  .callout { border-left: 4px solid var(--warn); background: rgba(245,185,66,.08); padding: .8rem 1rem; border-radius: 0 8px 8px 0; margin-top: 1rem; }
+  .callout.info { border-color: var(--accent); background: rgba(63,169,245,.08); }
+
+  .title-slide { justify-content: center; }
+  .pl { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: 1.5rem; }
+  .pl span { padding: .35rem .8rem; border-radius: 999px; font-weight: 700; font-size: .85rem; }
+
+  /* chrome */
+  .chrome { position: fixed; left: 0; right: 0; bottom: 0; height: 6vh; min-height: 40px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 2vw; color: var(--muted); font-size: .8rem; background: linear-gradient(transparent, rgba(11,23,38,.95) 40%); }
+  .chrome button { background: var(--panel); color: var(--ink); border: 1px solid #22395a; border-radius: 8px; padding: .35rem .8rem; cursor: pointer; font-size: .9rem; }
+  .chrome button:hover { border-color: var(--accent); }
+  .progress { position: fixed; top: 0; left: 0; height: 3px; background: var(--accent); transition: width .25s ease; }
+
+  @media print {
+    @page { size: 13.333in 7.5in; margin: 0; }
+    html, body { height: auto; }
+    .deck { height: auto; overflow: visible; }
+    .slide { position: relative; display: flex !important; height: 7.5in; page-break-after: always; break-after: page; overflow: hidden; animation: none; }
+    .chrome, .progress { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<main class="deck" id="deck">
+
+<!-- 1. Title -->
+<section class="slide title-slide">
+  <div class="kicker">Data 360 · Hands-on demo</div>
+  <h1>Contact data quality<br>with a Data 360 code extension</h1>
+  <p class="lead">How a tested, versioned Python script turns 30,000 messy contacts from three systems into 18,000 correctly resolved people, with no false merges.</p>
+  <div class="pl">
+    <span style="background:rgba(242,101,75,.18);color:var(--fire)">🔥 Fire</span>
+    <span style="background:rgba(63,193,165,.18);color:var(--hvac)">❄️ HVAC</span>
+    <span style="background:rgba(180,140,242,.18);color:var(--sec)">🔒 Security</span>
+  </div>
+  <p class="muted small" style="margin-top:2.5rem">Demo company: <strong>Acme Building Technologies (ABT)</strong>. It is fictional, and every name, domain and number in this deck is a placeholder.</p>
+</section>
+
+<!-- 2. The problem -->
+<section class="slide">
+  <div class="kicker">The problem</div>
+  <h2>One facility manager. Three systems. Three spellings.</h2>
+  <div class="grid g2">
+    <div>
+      <p>ABT sells fire, HVAC and security equipment through two direct CRMs and a dealer network. The same person is often entered more than once, and typed differently each time (illustrative):</p>
+      <pre><span class="c">CRM_NA          </span> <span class="s">raj.patel@ironbridge-demo.com</span>
+<span class="c">CRM_EMEA        </span> <span class="s"> Raj.Patel@IronBridge-Demo.com </span>
+<span class="c">DEALER_PORTAL   </span> <span class="s">Raj Patel &lt;raj.patel@ironbridge-demo.com&gt;</span></pre>
+      <p>Meanwhile, hundreds of <em>unrelated</em> people share one placeholder:</p>
+      <pre><span class="s">noemail@example.com</span>   <span class="c">← 630 contacts, all three sources</span></pre>
+    </div>
+    <div class="card">
+      <h3>What that costs the business</h3>
+      <ul>
+        <li><strong>Missed matches.</strong> The same customer is treated as two or three people.</li>
+        <li><strong>False merges.</strong> Strangers who share <code>noemail@example.com</code> are fused into one "person". That's a compliance problem, not just a cosmetic one.</li>
+        <li><strong>Unusable contact points.</strong> Phones that say <code>see notes</code> and countries that say <code>Atlantis</code>.</li>
+        <li><strong>No audit trail.</strong> Nobody can say which rules produced which value.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 3. What a code extension is -->
+<section class="slide">
+  <div class="kicker">The approach</div>
+  <h2>What a code extension is</h2>
+  <p class="lead">Your own <strong>Python (PySpark)</strong> script, deployed into Data 360 and run on Data 360 compute through a <strong>batch data transform</strong>.</p>
+  <div class="grid g3" style="margin-top:1.4rem">
+    <div class="card"><h3>🧪 Testable</h3><p>The rules are plain functions, so you can unit-test them on a laptop against all 30,000 rows with no org and no credits.</p></div>
+    <div class="card"><h3>🏷️ Versioned</h3><p>Each deploy has a <code>--package-version</code>, and every output row carries a <code>rule_version__c</code>. You always know which rules made a value.</p></div>
+    <div class="card"><h3>🚚 Promotable</h3><p>The extension moves to the next org inside a DevOps <strong>data kit</strong>, together with its batch data transform. Nothing is rebuilt by hand.</p></div>
+  </div>
+  <div class="callout info">It reads and writes like a SQL transform: DLO → DLO or DMO → DMO. What's different is that the rules are real code, kept in version control, with tests.</div>
+</section>
+
+<!-- 4. Architecture -->
+<section class="slide">
+  <div class="kicker">Architecture</div>
+  <h2>The end-to-end flow</h2>
+  <div class="flow">
+    <div class="node"><div class="zone">Source</div><div class="name">abt_contacts_raw.csv</div><div class="muted small">30,000 rows from three source systems</div></div>
+    <div class="arrow">→</div>
+    <div class="node"><div class="zone">Data 360 · ingest</div><div class="name">File Upload stream</div><div class="muted small"><code>ABT_Contact_Raw__dll</code><br>Profile, key <code>contact_id</code></div></div>
+    <div class="arrow">→</div>
+    <div class="node ce"><div class="zone">Data 360 · compute</div><div class="name">Batch data transform</div><div class="muted small">Create From Code Extension<br><code>ABT_Contact_DQ</code> · CPU_L</div></div>
+    <div class="arrow">→</div>
+    <div class="node"><div class="zone">Data 360 · output</div><div class="name">ABT_Contact_DQ__dll</div><div class="muted small">16 fields: statuses, clean values, key, hash</div></div>
+    <div class="arrow">→</div>
+    <div class="node"><div class="zone">Downstream</div><div class="name">Identity resolution · scorecard</div><div class="muted small">Match on <code>email_clean__c</code></div></div>
+  </div>
+  <div class="grid g3">
+    <div class="card"><h3>Laptop</h3><p class="small">Write rules → <code>pytest</code> → <code>scan</code> → <code>run</code> → <code>deploy</code>. Docker is needed only for CLI deploy; a zip upload in the UI also works.</p></div>
+    <div class="card"><h3>Org</h3><p class="small">The target DLO must exist <strong>before</strong> the first run. The extension runs only when a batch data transform triggers it.</p></div>
+    <div class="card"><h3>Observability</h3><p class="small">Run History shows rows read and written. Script logs land in <code>DataCustomCodeLogs__dll</code>, which has <strong>no governance</strong>, so never print PII.</p></div>
+  </div>
+</section>
+
+<!-- 5. Demo data -->
+<section class="slide">
+  <div class="kicker">The demo data</div>
+  <h2>30,000 rows · 18,000 real people</h2>
+  <div class="grid g2">
+    <div>
+      <table>
+        <tr><th>Source</th><th>Who's in it</th><th class="n">Rows</th></tr>
+        <tr><td><code>CRM_NA</code></td><td>US and Canada direct: hospitals, office towers, schools, data centers</td><td class="n">12,059</td></tr>
+        <tr><td><code>CRM_EMEA</code></td><td>UK, Germany, France direct: retail estates, airports, hotels</td><td class="n">9,628</td></tr>
+        <tr><td><code>DEALER_PORTAL</code></td><td>Dealers and installers in the US, Canada and Australia</td><td class="n">8,313</td></tr>
+      </table>
+      <p class="small muted" style="margin-top:1rem">Six product lines, about 5,000 rows each: <code>FIRE_DETECTION</code>, <code>FIRE_SUPPRESSION</code>, <code>HVAC_EQUIPMENT</code>, <code>HVAC_CONTROLS</code>, <code>SECURITY_ACCESS</code>, <code>SECURITY_VIDEO</code>.</p>
+    </div>
+    <div class="grid" style="gap:.8rem">
+      <div class="card"><div class="big">12,000</div><p class="muted">people appear twice, from a different source, with the email written differently: identical (4,800), case or spaces (2,400), <code>Name &lt;email&gt;</code> (2,400), stray quotes or <code>;</code> (2,400)</p></div>
+      <div class="card"><div class="big">2,100</div><p class="muted">people have an email that can't be fixed: a placeholder, a disposable domain, malformed, or blank</p></div>
+      <div class="card"><div class="big">20</div><p class="muted">hand-written spot-check rows, each with an exact expected result</p></div>
+    </div>
+  </div>
+  <p class="small muted">The data is generated deterministically (fixed seed, standard library only), so every number in this deck is reproducible.</p>
+</section>
+
+<!-- 6. The rules -->
+<section class="slide">
+  <div class="kicker">Rules version abt-dq-1.0.0</div>
+  <h2>Every field gets a status <em>and</em> a cleaned value</h2>
+  <table>
+    <tr><th>Field</th><th><span class="tag t-missing">MISSING</span></th><th><span class="tag t-invalid">INVALID</span></th><th><span class="tag t-remed">REMEDIATED</span></th><th><span class="tag t-valid">VALID</span></th></tr>
+    <tr><td><strong>Email</strong></td><td>blank</td><td>fails the address pattern, or uses a placeholder or disposable domain (<code>example.com</code>, <code>test.com</code>, <code>yy.com</code>, <code>mailinator.com</code>)</td><td><code>Name &lt;a@b.com&gt;</code> unwrapped, or stray <code>&lt;&gt;'";,.</code> stripped</td><td>only case or whitespace differs</td></tr>
+    <tr><td><strong>Phone</strong></td><td>blank</td><td>letters or <code>@;/&amp;,\</code>, fewer than 7 or more than 15 digits, 7 repeated digits, or <code>123456789</code></td><td>extension cut (<code>ext 12</code>, <code>x204</code>, <code>#3</code>)</td><td>unchanged</td></tr>
+    <tr><td><strong>Country</strong></td><td>blank</td><td>not in the country map (<code>Unknown</code>, <code>N/A</code>, <code>Atlantis</code>)</td><td>alias mapped to ISO2 (<code>Deutschland</code> → <code>DE</code>)</td><td>already an ISO2 code</td></tr>
+  </table>
+  <div class="callout info">The four-status model separates "we fixed it" from "it was already fine". That distinction is what the scorecard and the business conversation run on.</div>
+</section>
+
+<!-- 7. Inside the script -->
+<section class="slide">
+  <div class="kicker">Inside the script</div>
+  <h2>Rules in plain functions. The SDK only in <code>main()</code>.</h2>
+  <div class="grid g2">
+    <pre><span class="k">def</span> <span class="f">transform</span>(raw):
+    df = raw.select(<span class="s">"contact_id__c"</span>, <span class="s">"source_system__c"</span>,
+                    <span class="s">"product_line__c"</span>, <span class="s">"email__c"</span>,
+                    <span class="s">"phone__c"</span>, <span class="s">"country__c"</span>)
+    df = _email(df)      <span class="c"># status + email_clean__c</span>
+    df = _phone(df)      <span class="c"># status + phone_clean__c</span>
+    df = _country(df)    <span class="c"># status + country_iso2__c</span>
+    <span class="k">return</span> add_key_and_hash(df)
+
+<span class="k">def</span> <span class="f">main</span>():
+    client = Client()
+    result = transform(client.read_dlo(<span class="s">"ABT_Contact_Raw__dll"</span>))
+    client.write_to_dlo(<span class="s">"ABT_Contact_DQ__dll"</span>, result,
+                        write_mode=WriteMode.OVERWRITE)</pre>
+    <div>
+      <ul>
+        <li><strong><code>transform()</code> is pure PySpark</strong>, so tests call it directly on the CSV. No org is involved.</li>
+        <li><strong>Lowercase every column name.</strong> Data 360 resolves script columns in lowercase; <code>Email__c</code> fails with <em>column does not exist</em>.</li>
+        <li><strong>Spark built-ins only.</strong> No UDFs, RDDs, SparkContext patterns or listeners.</li>
+        <li><strong>Same object type in and out.</strong> This demo goes DLO → DLO.</li>
+      </ul>
+      <div class="callout small">The script is simplified here. The full version is <code>code_extension/payload/entrypoint.py</code>.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 8. DQ hash -->
+<section class="slide">
+  <div class="kicker">Change detection</div>
+  <h2>The DQ hash: proof that the rules reached every row</h2>
+  <pre style="font-size:clamp(.85rem,1.4vw,1.15rem)">dq_hash__c = SHA-256( rule_version | source_system | contact_id | email | phone | country )
+                       <span class="c">blanks coalesced to '' first, so the hash is never null</span></pre>
+  <div class="grid g3" style="margin-top:1.4rem">
+    <div class="card"><h3>One record changes</h3><p>Exactly <strong>one</strong> hash changes. Downstream jobs re-sync, re-activate or re-score only that row.</p></div>
+    <div class="card"><h3>A rule changes</h3><p>Bump <code>RULE_VERSION</code> and <strong>every</strong> hash changes. One <code>GROUP BY rule_version__c</code> proves the new rules hit all 30,000 rows.</p></div>
+    <div class="card"><h3>What it doesn't do</h3><p>It saves <em>downstream</em> work. The extension's own run still reads every row, so the hash doesn't make the run itself cheaper.</p></div>
+  </div>
+</section>
+
+<!-- 9. Lifecycle -->
+<section class="slide">
+  <div class="kicker">Build lifecycle</div>
+  <h2>Test before you spend</h2>
+  <div class="steps">
+    <div class="step"><strong>Init</strong><span class="cmd">script init</span><span class="tag t-free">no credits</span></div>
+    <div class="step"><strong>Unit test</strong><span class="cmd">pytest · 24 passed</span><span class="tag t-free">no credits</span></div>
+    <div class="step"><strong>Scan</strong><span class="cmd">script scan → config.json</span><span class="tag t-free">no credits</span></div>
+    <div class="step"><strong>Local run</strong><span class="cmd">script run · 1,000 rows</span><span class="tag t-credit">Data Queries</span></div>
+    <div class="step"><strong>Deploy</strong><span class="cmd">script deploy --cpu-size CPU_L</span></div>
+    <div class="step"><strong>Transform</strong><span class="cmd">Create From Code Extension · Run Now</span><span class="tag t-credit">Code Extension</span></div>
+    <div class="step"><strong>Verify</strong><span class="cmd">9 queries with expected values</span><span class="tag t-credit">Data Queries</span></div>
+  </div>
+  <div class="grid g2" style="margin-top:1.4rem">
+    <div class="card"><h3>What the 24 tests prove</h3><ul class="small">
+      <li>All 20 spot checks get their exact expected status</li>
+      <li>Remediated values are right (<code>02 9374 4000 x 15</code> → <code>02 9374 4000</code>)</li>
+      <li>One row per contact, and no null hashes</li>
+      <li>Clean email resolves 30,000 rows to exactly 18,000 people</li>
+      <li>A placeholder email is never a match key</li></ul></div>
+    <div class="card"><h3>What the local run proves</h3><p class="small">Your object names, column names, types and permissions against the <strong>real</strong> DLO. It reads only 1,000 rows by default, and that's enough: the tests already proved the rules on all 30,000. Don't raise the limit, because every local read uses credits.</p></div>
+  </div>
+</section>
+
+<!-- 10. Results -->
+<section class="slide">
+  <div class="kicker">Results · 30,000 rows</div>
+  <h2>What the extension found</h2>
+  <div class="legend">
+    <span style="--c:var(--valid)">VALID</span><span style="--c:var(--remed)">REMEDIATED</span><span style="--c:var(--invalid)">INVALID</span><span style="--c:var(--missing)">MISSING</span>
+  </div>
+  <div class="bar-row"><strong>Email</strong><div class="bar">
+    <div class="b-valid" style="width:76.1%" title="VALID 22,836">22,836</div><div class="b-remed" style="width:16.9%" title="REMEDIATED 5,064">5,064</div><div class="b-invalid" style="width:5.3%" title="INVALID 1,576">1,576</div><div class="b-missing" style="width:1.7%" title="MISSING 524"></div></div></div>
+  <div class="bar-row"><strong>Phone</strong><div class="bar">
+    <div class="b-valid" style="width:84.2%" title="VALID 25,249">25,249</div><div class="b-remed" style="width:7.9%" title="REMEDIATED 2,381">2,381</div><div class="b-invalid" style="width:4.9%" title="INVALID 1,469">1,469</div><div class="b-missing" style="width:3.0%" title="MISSING 901"></div></div></div>
+  <div class="bar-row"><strong>Country</strong><div class="bar">
+    <div class="b-valid" style="width:69.3%" title="VALID 20,793">20,793</div><div class="b-remed" style="width:24.7%" title="REMEDIATED 7,406">7,406</div><div class="b-invalid" style="width:2.9%" title="INVALID 865"></div><div class="b-missing" style="width:3.1%" title="MISSING 936"></div></div></div>
+  <div class="grid g3" style="margin-top:1rem">
+    <div class="card hl"><div class="big">24,183</div><p class="muted">fully contactable: email, phone and country all usable (81%)</p></div>
+    <div class="card"><div class="big">14,851</div><p class="muted">values fixed automatically (5,064 emails, 2,381 phones, 7,406 countries)</p></div>
+    <div class="card"><div class="big">~8%</div><p class="muted">of phones are unusable in <em>every</em> source, so the fix is a data-entry standard, not a tool</p></div>
+  </div>
+  <p class="small muted">Missing: email 524, phone 901, country 936. Invalid country: 865.</p>
+</section>
+
+<!-- 11. Identity story -->
+<section class="slide">
+  <div class="kicker">The moment that lands</div>
+  <h2>Clean first, then match</h2>
+  <div class="vs">
+    <div class="card bad">
+      <p class="muted">Match on raw email (lower-cased and trimmed)</p>
+      <div class="big">21,755</div><p>people found</p>
+      <p><span class="tag t-invalid">1,045 false merges</span></p>
+      <p class="small muted">1,048 unrelated contacts share <code>noemail@example.com</code> (630), <code>na@test.com</code> (236) or <code>none@test.com</code> (182). The 630 would become <strong>one</strong> "person".</p>
+    </div>
+    <div class="card good">
+      <p class="muted">Match on <code>email_clean__c</code></p>
+      <div class="big" style="color:var(--valid)">18,000</div><p>people found: the real answer</p>
+      <p><span class="tag t-valid">0 false merges</span></p>
+      <p class="small muted">Placeholder emails are marked INVALID, so they never become a match key. 30,000 rows → 18,000 people is 40% consolidation.</p>
+    </div>
+  </div>
+  <div class="callout info"><strong>Cleaning first finds 3,755 more duplicates <em>and</em> removes 1,045 wrong merges.</strong> Fewer duplicates and fewer false merges, from the same match rule.</div>
+</section>
+
+<!-- 12. Change loop -->
+<section class="slide">
+  <div class="kicker">The loop you repeat forever</div>
+  <h2>Change a rule, prove it, ship it</h2>
+  <p class="lead">Scenario: ABT sold its Kingsway Airports contract, and every <code>kingsway-demo.co.uk</code> address now bounces.</p>
+  <div class="steps" style="margin-top:1rem">
+    <div class="step"><strong>Edit</strong><span class="cmd">add the domain to JUNK_DOMAINS</span></div>
+    <div class="step"><strong>Version</strong><span class="cmd">RULE_VERSION = "abt-dq-1.1.0"</span></div>
+    <div class="step"><strong>Test</strong><span class="cmd">1 test fails: 18,000 → 18,854</span></div>
+    <div class="step"><strong>Confirm</strong><span class="cmd">the rules owner accepts the new number</span></div>
+    <div class="step"><strong>Ship</strong><span class="cmd">scan → run → deploy 1.1.0 → Run Now</span></div>
+    <div class="step"><strong>Prove</strong><span class="cmd">one rule_version · 30,000 rows</span></div>
+  </div>
+  <div class="grid g2" style="margin-top:1.4rem">
+    <div class="card"><h3>The test caught it</h3><p>People by clean email moves from <strong>18,000 to 18,854</strong>. You see the business impact <em>before</em> anything touches the org.</p></div>
+    <div class="card"><h3>The org confirms it</h3><p>Email INVALID goes from <strong>1,576 to 3,614</strong>, and <code>GROUP BY rule_version__c</code> returns a single row: <code>abt-dq-1.1.0</code>, 30,000.</p></div>
+  </div>
+</section>
+
+<!-- 13. Write modes -->
+<section class="slide">
+  <div class="kicker">Write modes</div>
+  <h2>OVERWRITE today, MERGE when it grows</h2>
+  <table>
+    <tr><th>Mode</th><th>What it does</th><th>Use when</th></tr>
+    <tr><td><code>OVERWRITE</code></td><td>Replaces the whole target</td><td>Full refresh. The simplest option, and what this demo uses</td></tr>
+    <tr><td><code>APPEND</code></td><td>Adds rows</td><td>Run logs, history and per-run summary tables</td></tr>
+    <tr><td><code>MERGE</code></td><td>Upserts on the target's primary key (<code>dq_key__c</code>)</td><td>Incremental runs. Rows deleted at source <strong>stay</strong> in the target</td></tr>
+    <tr><td><code>MERGE_UPSERT_DELETE</code></td><td>Upserts <strong>and</strong> deletes. Every row needs <code>_merge_record_type</code> set to UPSERT or DELETE</td><td>Incremental runs where source deletes must flow through</td></tr>
+  </table>
+  <div class="callout info">Try it live: delete <code>DP-300006</code>, change <code>NA-100001</code>'s email, re-upload, and rerun under each mode. Under MERGE the deleted row survives; under MERGE_UPSERT_DELETE it's removed.</div>
+</section>
+
+<!-- 14. Cost -->
+<section class="slide">
+  <div class="kicker">Say this out loud before scheduling</div>
+  <h2>What it costs</h2>
+  <div class="grid g2">
+    <table>
+      <tr><th>What</th><th>Billed as</th><th>Digital Wallet</th></tr>
+      <tr><td>Deployed run</td><td><strong>Compute hours × CU rate.</strong> Runs under a minute bill as 60 seconds, then per second</td><td><em>Code Extension</em></td></tr>
+      <tr><td>Local <code>script run</code></td><td>Query API reads</td><td><em>Data Queries</em></td></tr>
+      <tr><td>SQL batch data transform</td><td>Rows processed: the larger of rows read and rows written</td><td><em>Batch Data Transforms</em></td></tr>
+    </table>
+    <div>
+      <table>
+        <tr><th>CPU size</th><th class="n">CU / hour</th></tr>
+        <tr><td><code>CPU_L</code></td><td class="n">4</td></tr>
+        <tr><td><code>CPU_XL</code></td><td class="n">8</td></tr>
+        <tr><td><code>CPU_2XL</code> <span class="tag t-credit">default</span></td><td class="n">16</td></tr>
+        <tr><td><code>CPU_4XL</code></td><td class="n">32</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="callout"><strong>Leaving <code>--cpu-size</code> off gets you CPU_2XL, at 4× the CPU_L rate.</strong> Read the real runtime from Run History and multiply it out, and turn off any schedule on a demo org when the session ends.</div>
+</section>
+
+<!-- 15. vs SQL -->
+<section class="slide">
+  <div class="kicker">Choosing the tool</div>
+  <h2>Code extension vs a SQL batch data transform</h2>
+  <table>
+    <tr><th></th><th>SQL batch data transform</th><th>Code extension</th></tr>
+    <tr><td><strong>Rules live in</strong></td><td>SQL in the transform UI</td><td>Python in version control</td></tr>
+    <tr><td><strong>Unit tests</strong></td><td>None: test in the org</td><td><code>pytest</code> on a laptop, no org</td></tr>
+    <tr><td><strong>Billing</strong></td><td>Rows processed</td><td>Compute time × CU size</td></tr>
+    <tr><td><strong>Versioning</strong></td><td>Whatever is pasted in today</td><td><code>--package-version</code> + <code>rule_version__c</code> on every row</td></tr>
+    <tr><td><strong>Best for</strong></td><td>Simple joins and filters; SQL-only teams</td><td>Many rules, regex-heavy cleansing, reuse across objects, teams who want CI</td></tr>
+  </table>
+  <div class="callout"><strong>Neither is free.</strong> Measure both on the customer's real volume before claiming either one is cheaper.</div>
+</section>
+
+<!-- 16. Golden rules -->
+<section class="slide">
+  <div class="kicker">Keep these on screen</div>
+  <h2>12 golden rules</h2>
+  <ol class="rules">
+    <li><strong>Lowercase every column name</strong> in the script. Object API names stay as shown.</li>
+    <li><strong>Read and write the same object type:</strong> DLO → DLO or DMO → DMO.</li>
+    <li><strong>Create the target DLO first,</strong> with fields that match the DataFrame.</li>
+    <li><strong>Rules in plain functions; the SDK only in <code>main()</code>.</strong></li>
+    <li><strong>Test before you spend:</strong> pytest → scan → run → deploy.</li>
+    <li><strong>Bump <code>RULE_VERSION</code></strong> on every rule change.</li>
+    <li><strong>Never null the hash.</strong> Coalesce blanks to <code>''</code> first.</li>
+    <li><strong>Never print PII.</strong> The logs DLO has no governance policies.</li>
+    <li><strong>Size it on purpose:</strong> <code>--cpu-size CPU_L</code> unless you've measured a need for more.</li>
+    <li><strong>Built-ins only.</strong> No UDFs, RDDs or SparkContext.</li>
+    <li><strong>It runs only through a batch data transform.</strong> Schedule it only with a credit owner.</li>
+    <li><strong>Promote with a data kit.</strong> Never rebuild by hand.</li>
+  </ol>
+</section>
+
+<!-- 17. Use cases -->
+<section class="slide">
+  <div class="kicker">What to configure next</div>
+  <h2>The use-case menu</h2>
+  <div class="grid g4" style="gap:.8rem">
+    <div class="card hl"><h3>1 · Rules as code</h3><p class="small">Always do this one. 24 tests, versioned, and one change applies to every row.</p></div>
+    <div class="card"><h3>2 · Identity uplift</h3><p class="small">Map <code>email_clean__c</code> to Contact Point Email: 18,000 profiles, no false merges.</p></div>
+    <div class="card"><h3>3 · Hash change detection</h3><p class="small">Downstream jobs reprocess only the rows whose hash changed.</p></div>
+    <div class="card"><h3>4 · MERGE</h3><p class="small">Incremental writes, and source deletes that flow through.</p></div>
+    <div class="card"><h3>5 · vs SQL transform</h3><p class="small">Build the same rule both ways and compare Run History.</p></div>
+    <div class="card"><h3>6 · DQ scorecard</h3><p class="small">Usable email and phone % by source × product line, plus a release gate.</p></div>
+    <div class="card"><h3>7 · Data kit</h3><p class="small">Same <code>rule_version__c</code> in the next org, with no hand rebuild.</p></div>
+    <div class="card" style="background:transparent;border-style:dashed"><h3>Pick, don't do all</h3><p class="small muted">Start from the customer's stated concern: usually "the same person exists in several systems".</p></div>
+  </div>
+</section>
+
+<!-- 18. Talk track -->
+<section class="slide">
+  <div class="kicker">Talk track</div>
+  <h2>What customers always ask</h2>
+  <div class="grid g2">
+    <div class="card"><h3>"Why not just do this in SQL?"</h3><p class="small">You can, for a few rules. Once you have dozens of regex rules across several objects, you'll want unit tests, versions and one place to change them.</p></div>
+    <div class="card"><h3>"How many credits does it cost?"</h3><p class="small">Compute time × CU size, with a 60-second minimum per run. Measure on your volume, and always set <code>--cpu-size</code>.</p></div>
+    <div class="card"><h3>"Can it break identity resolution?"</h3><p class="small">It improves it: 18,000 correct profiles instead of 21,755 with 1,045 wrong merges.</p></div>
+    <div class="card"><h3>"What if the rules are wrong?"</h3><p class="small">Change one function and bump the version. The tests show the effect before you redeploy, and the hash proves the new rule reached every row.</p></div>
+    <div class="card"><h3>"Is our data safe in logs?"</h3><p class="small">Only if the script never prints record values. The logs DLO has no governance policies, so log counts and step names only.</p></div>
+    <div class="card"><h3>"How does this get to production?"</h3><p class="small">A DevOps data kit. Add the batch data transform, and the code extension comes with it.</p></div>
+  </div>
+</section>
+
+<!-- 19. Before the session -->
+<section class="slide">
+  <div class="kicker">Before the session</div>
+  <h2>Clear the day-of blockers early</h2>
+  <div class="grid g2">
+    <div class="card"><h3>In the org</h3><ul class="small">
+      <li>Data 360 provisioned, and <strong>Code Extension</strong> enabled in Feature Manager</li>
+      <li>The driver has <strong>Data Cloud Architect</strong>, plus CRUD on Data Custom Code Procedure Definitions</li>
+      <li>The org is <strong>not BYOK</strong> (code extension isn't supported there)</li>
+      <li>Someone owns the credits and decides who can schedule</li></ul></div>
+    <div class="card"><h3>On the driver's laptop</h3><ul class="small">
+      <li>Python <strong>3.11</strong> and Azul Zulu OpenJDK <strong>17</strong></li>
+      <li>Salesforce CLI ≥ 2.130.9 with <code>@salesforce/plugin-data-code-extension</code></li>
+      <li><strong>Docker</strong> running, for CLI deploy. If the corporate laptop blocks it, use the UI zip upload instead</li></ul></div>
+  </div>
+  <div class="callout"><strong>#1 blocker:</strong> a missing permission set or the Code Extension feature not enabled. <strong>#2:</strong> a laptop that can't run Docker or install Python 3.11. Check both before the session.</div>
+  <p class="small muted" style="margin-top:1.2rem">The step-by-step runbook is in <code>README.md</code> and <code>docs/00</code>–<code>09</code>. The mock data, generator and verification SQL are in <code>mock_seed/</code>; the script and tests are in <code>code_extension/</code>.</p>
+</section>
+
+</main>
+
+<nav class="chrome">
+  <span>Code extension contact DQ · ABT demo</span>
+  <span>
+    <button id="prev" aria-label="Previous slide">←</button>
+    <span id="count" style="margin:0 .8rem"></span>
+    <button id="next" aria-label="Next slide">→</button>
+  </span>
+  <span>← → / Space · F fullscreen</span>
+</nav>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const count = document.getElementById('count');
+  const progress = document.getElementById('progress');
+  let i = 0;
+
+  function show(n) {
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach((s, k) => s.classList.toggle('active', k === i));
+    count.textContent = (i + 1) + ' / ' + slides.length;
+    progress.style.width = ((i + 1) / slides.length * 100) + '%';
+    history.replaceState(null, '', '#' + (i + 1));
+  }
+
+  document.addEventListener('keydown', e => {
+    if (['ArrowRight', 'PageDown', ' ', 'Enter'].includes(e.key)) { e.preventDefault(); show(i + 1); }
+    else if (['ArrowLeft', 'PageUp', 'Backspace'].includes(e.key)) { e.preventDefault(); show(i - 1); }
+    else if (e.key === 'Home') show(0);
+    else if (e.key === 'End') show(slides.length - 1);
+    else if (e.key === 'f' || e.key === 'F') {
+      document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+    }
+  });
+  document.getElementById('prev').onclick = () => show(i - 1);
+  document.getElementById('next').onclick = () => show(i + 1);
+
+  let x0 = null;
+  document.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
+  document.addEventListener('touchend', e => {
+    if (x0 === null) return;
+    const dx = e.changedTouches[0].clientX - x0;
+    if (Math.abs(dx) > 50) show(i + (dx < 0 ? 1 : -1));
+    x0 = null;
+  });
+
+  show((parseInt(location.hash.slice(1), 10) || 1) - 1);
+</script>
+</body>
+</html>

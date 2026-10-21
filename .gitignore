@@ -1,0 +1,12 @@
+.DS_Store
+node_modules/
+*.log
+.env
+__pycache__/
+.pytest_cache/
+venv/
+.venv/
+*.zip
+
+# Generated mock data: rebuild with python3 mock_seed/generate_seed.py
+*.csv
