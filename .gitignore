@@ -1,4 +1,6 @@
+# OS / tooling cruft
 .DS_Store
+.sfdx/
 node_modules/
 *.log
 .env
@@ -6,7 +8,27 @@ __pycache__/
 .pytest_cache/
 venv/
 .venv/
-*.zip
 
-# Generated mock data: rebuild with python3 mock_seed/generate_seed.py
+# Client data — never push (source PDFs, extracts, generated load files).
+# The mock CSV is rebuilt with: python3 generators/generate_seed.py
 *.csv
+*.pdf
+*.xlsx
+*.xls
+*.zip
+*.docx
+*.pptx
+
+# Collateral — decks, diagrams (not code or runbooks).
+# docs/deck.html is deliberately tracked, so *deck*.html is not listed here.
+docs/*.png
+*.gdoc
+*.ppt
+*slide*
+*slides*
+
+# Any folder whose name contains "data" — source-data, data, etc.
+**/*data*/
+
+# Local Claude Code runtime state
+.claude/

@@ -2,8 +2,8 @@
 -- Verification queries: ABT contact DQ code extension
 -- ----------------------------------------------------------------------------
 -- Run in Data 360 Query Editor after the batch data transform has run
--- (docs/06-verify-and-iterate.md). Expected values come from a local run of
--- code_extension/tests against mock_seed/abt_contacts_raw.csv.
+-- (runbooks/06-verify-and-iterate.md). Expected values come from a local run of
+-- code_extension/tests against data/abt_contacts_raw.csv.
 --
 -- Field names are the DLO field API names. Query Editor is case-insensitive;
 -- the code extension script is not (it needs lowercase).
@@ -43,7 +43,7 @@ FROM ABT_Contact_DQ__dll
 GROUP BY source_system__c, product_line__c
 ORDER BY source_system__c, product_line__c;
 
--- 5. Spot checks (the 20 hand-written rows; expected values in docs/06) ------
+-- 5. Spot checks (the 20 hand-written rows; expected values in runbooks/06) ------
 SELECT contact_id__c,
        email_raw__c, email_clean__c, email_status__c,
        phone_raw__c, phone_clean__c, phone_status__c,

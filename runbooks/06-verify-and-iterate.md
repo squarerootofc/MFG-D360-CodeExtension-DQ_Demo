@@ -2,7 +2,7 @@
 
 # 6. Verify and iterate
 
-Every query below is in [`mock_seed/verification_queries.sql`](../mock_seed/verification_queries.sql), with its expected value beside it.
+Every query below is in [`runbooks/verification_queries.sql`](verification_queries.sql), with its expected value beside it.
 
 ## Step 6.1: Counts and status mix
 

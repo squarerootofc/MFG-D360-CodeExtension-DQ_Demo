@@ -4,13 +4,13 @@
 
 You'll load **30,000 contacts** for Acme Building Technologies from three source systems
 (`CRM_NA`, `CRM_EMEA`, `DEALER_PORTAL`) into one DLO. See the
-[mock seed README](../mock_seed/README.md) for the company story and the demo hooks
+[data design](DATA_DESIGN.md) for the company story and the demo hooks
 built into the data.
 
 ## Step 2.1: Generate the file
 
 ```bash
-python3 mock_seed/generate_seed.py      # wrote 30000 rows to abt_contacts_raw.csv
+python3 generators/generate_seed.py      # wrote 30000 rows to abt_contacts_raw.csv
 ```
 
 The CSV isn't committed to the repo, so you need to run this once after cloning. Its seed is fixed, so everyone gets the same file.
@@ -18,7 +18,7 @@ The CSV isn't committed to the repo, so you need to run this once after cloning.
 ## Step 2.2: Create a File Upload data stream (10 min)
 
 1. In the Data Cloud app, go to **Data Streams**, click **New**, and choose **File Upload**.
-2. Upload `mock_seed/abt_contacts_raw.csv` (4.4 MB; the File Upload limit is 2 GB).
+2. Upload `data/abt_contacts_raw.csv` (4.4 MB; the File Upload limit is 2 GB).
 3. Set the stream up:
 
 | Setting | Value |

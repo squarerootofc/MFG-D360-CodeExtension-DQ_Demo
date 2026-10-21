@@ -22,7 +22,7 @@
 ## Where to look next
 
 - **Run History:** Data Cloud Setup → Code Extension → ABT_Contact_DQ → **Run History** (status, rows read and written, runtime)
-- **Logs:** `DataCustomCodeLogs__dll` (query 9 in [`verification_queries.sql`](../mock_seed/verification_queries.sql))
+- **Logs:** `DataCustomCodeLogs__dll` (query 9 in [`verification_queries.sql`](verification_queries.sql))
 - **Docs:** [Data 360 Code Extension Guide](https://developer.salesforce.com/docs/data/data-cloud-code-ext/guide/use-custom-script.html) · [CLI reference](https://developer.salesforce.com/docs/data/data-cloud-code-ext-cli-reference/guide/data-code-extension-commands.html)
 
 ---

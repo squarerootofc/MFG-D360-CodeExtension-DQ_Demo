@@ -61,7 +61,7 @@ Fill these in during scoping, so the use cases read as *their* scenario rather t
 
 ## Use case 6 — DQ scorecard by source and product line
 
-**Configure:** query 4 in [`verification_queries.sql`](../mock_seed/verification_queries.sql), as a calculated insight or a dashboard.
+**Configure:** query 4 in [`verification_queries.sql`](verification_queries.sql), as a calculated insight or a dashboard.
 **Prove:** usable-email and usable-phone percentages for each `source_system` × `product_line`. About 8% of phones are unusable in every source, so the fix is a *data-entry standard* across all three, not a tooling change in one. With the customer's real data, this is where one source usually stands out.
 **Extension:** add a **release gate**: a second write (APPEND) of one summary row per run to a `ABT_DQ_Run_Summary__dll`, so downstream jobs stop if, say, email usability drops below 85%.
 

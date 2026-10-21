@@ -5,18 +5,18 @@
 | Path | What it is |
 |------|------------|
 | [`payload/entrypoint.py`](payload/entrypoint.py) | The script you deploy. `transform()` holds every rule as plain PySpark, and `main()` is the only part that calls the SDK. |
-| [`tests/test_entrypoint.py`](tests/test_entrypoint.py) | 24 unit tests against `mock_seed/abt_contacts_raw.csv` (generate it first with [`generate_seed.py`](../mock_seed/generate_seed.py)). They need no org and use no credits. |
+| [`tests/test_entrypoint.py`](tests/test_entrypoint.py) | 24 unit tests against `data/abt_contacts_raw.csv` (generate it first with [`generate_seed.py`](../generators/generate_seed.py)). They need no org and use no credits. |
 | [`requirements-test.txt`](requirements-test.txt) | What the tests need locally: `pyspark` and `pytest`. |
 
 This folder holds **only the script and its tests**. `sf data-code-extension script init`
 generates the rest of the package (`config.json`, `requirements.txt`, `Dockerfile`).
-[Section 4](../docs/04-build-and-test-locally.md) shows how to copy this script into it.
+[Section 4](../runbooks/04-build-and-test-locally.md) shows how to copy this script into it.
 
 ```bash
 # from the repo root, with Python 3.11 and Java 17
 python3.11 -m venv .venv && source .venv/bin/activate
 pip install -r code_extension/requirements-test.txt
-python3 mock_seed/generate_seed.py      # the tests read the generated CSV
+python3 generators/generate_seed.py      # the tests read the generated CSV
 JAVA_HOME=$(/usr/libexec/java_home -v 17) python -m pytest code_extension/tests -q   # 24 passed
 ```
 

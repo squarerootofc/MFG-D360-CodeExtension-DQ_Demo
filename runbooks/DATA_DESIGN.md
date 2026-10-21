@@ -4,7 +4,7 @@
 
 Mock contact data for the code extension runbook. It loads into **Data 360** as a
 **File Upload** data stream, and the code extension cleans it so you can walk every
-[use case in section 9](../docs/09-use-cases-to-configure.md) end to end.
+[use case in section 9](09-use-cases-to-configure.md) end to end.
 
 > 📝 **All names are placeholders.** Acme Building Technologies (ABT) is fictional. It
 > makes fire detection and suppression, HVAC equipment and controls, and access control
@@ -56,9 +56,9 @@ Each contact carries a `product_line`:
 
 | File | What it is |
 |------|------------|
-| `abt_contacts_raw.csv` | **The file you upload.** Not committed: run `generate_seed.py` to create it. 30,000 rows, 4.4 MB. The first 20 are hand-written spot checks (`NA-100001`…`DP-300006`); the rest are generated. |
-| [`generate_seed.py`](generate_seed.py) | Rebuilds the CSV in under a second. Uses only the standard library and a fixed seed, so it always produces the same file. To change the scale, edit `GENERATED_PEOPLE`, `BAD_EMAILS` and `DUPLICATES`. |
-| [`verification_queries.sql`](verification_queries.sql) | Query Editor checks with the expected value next to each one. Covers row counts, status mix, scorecard, spot checks, identity uplift, false merges, the hash, and logs. |
+| `data/abt_contacts_raw.csv` | **The file you upload.** Not committed: run `generate_seed.py` to create it. 30,000 rows, 4.4 MB. The first 20 are hand-written spot checks (`NA-100001`…`DP-300006`); the rest are generated. |
+| [`generators/generate_seed.py`](../generators/generate_seed.py) | Rebuilds the CSV in under a second. Uses only the standard library and a fixed seed, so it always produces the same file. To change the scale, edit `GENERATED_PEOPLE`, `BAD_EMAILS` and `DUPLICATES`. |
+| [`runbooks/verification_queries.sql`](verification_queries.sql) | Query Editor checks with the expected value next to each one. Covers row counts, status mix, scorecard, spot checks, identity uplift, false merges, the hash, and logs. |
 
 **Columns:** `contact_id, source_system, account_name, first_name, last_name, job_title,
 product_line, email, phone, country`. File Upload turns each header into a field with
@@ -66,9 +66,9 @@ the same name followed by `__c` (for example, `email` becomes `email__c`).
 
 ## How to load
 
-1. Generate the file: `python3 mock_seed/generate_seed.py`. The CSV isn't committed,
+1. Generate the file: `python3 generators/generate_seed.py`. The CSV isn't committed,
    so run this once after cloning, and again whenever you change the generator.
-2. Follow [section 2](../docs/02-load-mock-data.md). Create a File Upload stream named
+2. Follow [section 2](02-load-mock-data.md). Create a File Upload stream named
    `ABT_Contact_Raw`, with category **Profile** and primary key `contact_id`.
 3. Check the load with `SELECT COUNT(*) FROM ABT_Contact_Raw__dll`. It should return **30,000**.
 
@@ -97,4 +97,4 @@ the same name followed by `__c` (for example, `email` becomes `email__c`).
 
 ---
 
-[← 9. Use cases](../docs/09-use-cases-to-configure.md) · [Guide index](../README.md)
+[← 9. Use cases](09-use-cases-to-configure.md) · [Guide index](../README.md)

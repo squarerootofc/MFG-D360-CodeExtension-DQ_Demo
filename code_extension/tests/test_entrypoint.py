@@ -14,7 +14,7 @@ REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "code_extension" / "payload"))
 from entrypoint import transform  # noqa: E402
 
-SEED_CSV = REPO / "mock_seed" / "abt_contacts_raw.csv"
+SEED_CSV = REPO / "data" / "abt_contacts_raw.csv"
 
 # Spot-check rows -> (email_status, phone_status, country_status)
 EXPECTED = {

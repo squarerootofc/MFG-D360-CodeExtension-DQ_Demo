@@ -2,10 +2,10 @@
 Mock seed generator: Acme Building Technologies (ABT) contact data.
 
 ABT is a fictional manufacturer of fire, HVAC and security equipment for buildings.
-This writes abt_contacts_raw.csv: 30,000 contact rows from three source systems, with
+This writes data/abt_contacts_raw.csv: 30,000 contact rows from three source systems, with
 deliberately dirty email, phone and country values and built-in duplicate identities.
 
-    python3 mock_seed/generate_seed.py          # stdlib only, deterministic, ~1 second
+    python3 generators/generate_seed.py          # stdlib only, deterministic, ~1 second
 
 Shape (fixed seed, so every run produces the same file):
   - 18,000 people. 20 are hand-written spot-check rows (see SPOT_CHECKS), 17,980 are generated.
@@ -22,7 +22,7 @@ import csv
 import random
 from pathlib import Path
 
-OUT = Path(__file__).resolve().parent / "abt_contacts_raw.csv"
+OUT = Path(__file__).resolve().parents[1] / "data" / "abt_contacts_raw.csv"
 SEED = 20261019
 GENERATED_PEOPLE = 17_980   # + 20 spot checks = 18,000 people
 BAD_EMAILS = 2_094          # + 6 bad emails in the spot checks = 2,100 people
@@ -247,7 +247,7 @@ def main():
         w = csv.DictWriter(f, fieldnames=HEADER)
         w.writeheader()
         w.writerows(out)
-    print(f"wrote {len(out)} rows to {OUT.name}")
+    print(f"wrote {len(out)} rows to data/{OUT.name}")
 
 
 if __name__ == "__main__":
